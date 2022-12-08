@@ -5,6 +5,15 @@ from .constants import Constants
 
 logger = logging.getLogger(__name__)
 
+def sph_to_cart_jnp(theta, phi=0):
+    """Transform spherical to cartesian coordinates."""
+    x = jnp.sin(theta) * jnp.cos(phi)
+    y = jnp.sin(theta) * jnp.sin(phi)
+    z = jnp.cos(theta)
+
+    return jnp.asarray([x, y, z], dtype=jnp.float64)
+
+
 def proposal_setup():
     """Set up a proposal propagator."""
     try:
@@ -62,6 +71,9 @@ def get_zen_azi(direc):
     azimuth -= int(azimuth / (2 * np.pi)) * (2 * np.pi)
     return zenith, azimuth
 
+def is_in_cylinder(radius, height, pos):
+    """Test whether a position vector is inside a cylinder."""
+    return (np.sqrt(pos[0] ** 2 + pos[1] ** 2) < radius) & (np.abs(pos[2]) < height / 2)
 
 def track_isects_cyl(radius, height, pos, direc):
     """Check if a track intersects a cylinder."""
@@ -106,6 +118,13 @@ def track_isects_cyl(radius, height, pos, direc):
                 h = max(h[0], r[0]), min(h[1], r[1])
     return h
 
+def deposited_energy(det, record):
+    """Calculate the deposited energy inside the detector outer hull."""
+    dep_e = 0
+    for source in record.sources:
+        if is_in_cylinder(det.outer_cylinder[0], det.outer_cylinder[1], source.pos):
+            dep_e += source.amp
+    return dep_e
 
 def event_labelling(track_records, strack_records, cascade_records=None, det_hull=(50.0, 1000.0), updown=True, tolerance=10):
 
