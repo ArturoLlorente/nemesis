@@ -1,0 +1,75 @@
+FROM nvidia/cuda:11.4.1-cudnn8-devel-ubuntu20.04 as base
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update && \
+    apt-get -y --no-install-recommends install \
+    build-essential \
+    gcc \
+    git \
+    libssl-dev \
+    python3-dev \
+    python3-pip \
+    python-is-python3 \
+    wget libgsl-dev pkg-config libhdf5-serial-dev libboost-all-dev && \
+    apt-get remove python2 && apt-get autoremove --purge && \
+    rm -rf /var/lib/apt/lists/* && \
+    wget https://github.com/Kitware/CMake/releases/download/v3.20.3/cmake-3.20.3.tar.gz && \
+    tar -zxvf cmake-3.20.3.tar.gz && \
+    cd cmake-3.20.3 && ./bootstrap && make -j4 && make install && \
+    pip install conan && \
+    conan profile new default --detect && conan profile update settings.compiler.libcxx=libstdc++11 default && \
+    mkdir /opt/PROPOSAL && cd /opt/PROPOSAL && \
+    git clone https://github.com/tudo-astroparticlephysics/PROPOSAL.git . && \
+    mkdir -p build && cd build && conan install .. -o with_python=True && \
+    conan build .. && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.11.0-Linux-x86_64.sh -O ~/miniconda.sh && \
+    bash ~/miniconda.sh -b -p /opt/conda/ && \
+    . /opt/conda/bin/activate && conda init && \
+    pip install numpy && \ 
+    mkdir -p /usr/local/lib/SQuIDS && \
+    cd /usr/local/lib/SQuIDS && \
+    git clone https://github.com/jsalvado/SQuIDS.git . && \
+    ./configure && make && make install && \
+    mkdir -p /usr/local/lib/nuSQuIDS && \
+    cd /usr/local/lib/nuSQuIDS && \
+    git clone https://github.com/arguelles/nuSQuIDS.git . && \
+    ./configure --with-python-bindings --with-squids=/usr/local/lib/SQuIDS && \
+    make && make install && LD_LIBRARY_PATH=/opt/conda/lib/:$LD_LIBRARY_PATH make python && make python-install
+#cp /opt/conda/lib/libpython3.7m.so /usr/local/lib && \	
+
+COPY build_proposal_tables.py /opt/PROPOSAL/build_proposal_tables.py
+RUN PYTHONPATH=$PYTHONPATH:/opt/PROPOSAL/build/src/pyPROPOSAL python3 /opt/PROPOSAL/build_proposal_tables.py
+RUN wget https://nodejs.org/dist/v14.17.0/node-v14.17.0-linux-x64.tar.xz && \
+    mkdir -p /usr/local/lib/nodejs && \
+    tar -xJvf node-v14.17.0-linux-x64.tar.xz -C /usr/local/lib/nodejs && \
+    apt-get update && apt-get -y --no-install-recommends install npm && rm -rf /var/lib/apt/lists
+
+ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+
+RUN pip install MCEq && \
+    python -c "from MCEq.core import MCEqRun"
+
+ENV PATH="/opt/conda/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/usr/local/cuda-11/lib64/:${LD_LIBRARY_PATH}"
+SHELL ["conda", "run", "--no-capture-output", "-n", "base", "/bin/bash", "-c"]
+
+RUN pip3 install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113 && \
+    pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cu113.html && \
+    pip install jupyterlab awkward numba seaborn tqdm ipywidgets aquirdturtle_collapsible_headings plotly networkx dill pytorch_lightning colorlog && \
+    pip install tensorflow tbp-nightly matplotlib_inline Geometry3D && \
+    pip install git+https://github.com/thoglu/jammy_flows.git && \
+    pip install fb8 dm-haiku optax && \
+    pip install git+https://github.com/deepmind/distrax.git && \
+    pip install git+https://github.com/aliutkus/torchinterp1d.git && \
+    pip install jupyterlab_code_formatter black isort pyhf pyhf[jax] &&\
+    pip install htcondor fennel_seed[jax] && \
+    conda install scikit-geometry -c conda-forge -y && \ 
+    pip install --upgrade jax[cuda11_cudnn82] -f https://storage.googleapis.com/jax-releases/jax_releases.html && \    
+    conda install -c conda-forge jupyterlab_execute_time
+
+RUN PATH=/usr/local/lib/nodejs/node-v14.17.0-linux-x64/bin:$PATH jupyter labextension install jupyterlab-plotly
+
+RUN echo "export PATH=/usr/local/lib/nodejs/node-v14.17.0-linux-x64/bin:${PATH}" >> /root/.bashrc && \
+    echo "export PYTHONPATH=${PYTHONPATH}:/opt/PROPOSAL/build/src/pyPROPOSAL:/usr/lib/nuSQuIDS/resources/python/bindings/:/workspaces/repos/hyperion:/workspaces/repos/olympus" >> /root/.bashrc && \
+    echo "export LD_LIBRARY_PATH=/usr/local/cuda-11/lib64/:${LD_LIBRARY_PATH}" >> /root/.bashrc
+
+ENTRYPOINT [ "/bin/bash" ]

@@ -65,37 +65,56 @@ Nemesis is a GNN based classification tool for event classification at P-One. Th
 To be able to run the code you need to have a working installation of [PyTorch](https://pytorch.org/), [PyTorch Geometric](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html) and [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/latest/new-project.html). 
 After that you can clone the repository and install the requirements.
 
-### Prerequisites
+## Prerequisites
 
-* PyTorch
-* PyTorch Geometric
-* PyTorch Lightning
+Before you start to work with this project, Docker has to be installed and all dependencies be provided as described in the following sections.
 
-### Installation
+### Install Docker
+    
+Check the official [Docker](https://docs.docker.com/engine/install/) documentation for installation instructions.
 
-1. Clone the repo
-   ```sh
-   git clone
-    ```
-2. Install requirements
-    ```sh
-    pip install -r requirements.txt
-    ```
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Container installation
+## Installation via Docker Container
 
-The repository contains a Dockerfile to build a container with all the requirements. To build the container you can run the following command:
+### How to build a container
 
-```sh
-docker build -t nemesis .
+Create a working directory and move all necessary file into that folder. Then run:
+
+```
+sudo docker build -f dockerfile -t image-name .
+```
+### Running a container:
+
+The following command binds ports 8888 and 8008 to the host machine, makes GPUs available and binds the current working directory
+to `/app` inside the container:
+
+```
+sudo docker run -p 8888:8888 -p 8008:8008 --gpus all --rm -ti --ipc=host -v "$(pwd)":/app container-name
+```
+### Shelling into a running container
+
+This command opens a shell inside the first docker container that `docker ps` lists:
+
+```
+sudo docker exec -it `sudo docker ps | awk 'FNR==2 {print $1}'` /bin/bash
+```
+### Running a Jupyter Notebook
+
+This command runs a Jupyter Notebook server inside the container:
+
+```
+PYTHONPATH=${PYTHONPATH}:/opt/PROPOSAL/build/src/pyPROPOSAL:/usr/lib/nuSQuIDS/resources/python/bindings/ jupyter lab --port=8888 --no-browser --ip=0.0.0.0 --allow-root --notebook-dir=/app
 ```
 
-To run the container you can use the following command:
+### Running a Tensorboard
 
-```sh
-docker run -it --rm -v /path/to/data:/data nemesis
+This command runs a Tensorboard server inside the container:
+
 ```
+tensorboard --port 8008 --logdir=/tmp/tensorboard --bind_all
+
+```
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -103,6 +122,16 @@ docker run -it --rm -v /path/to/data:/data nemesis
 <!-- LICENSE -->
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Distributed under the GNU General Public License v3.0. See `LICENSE.txt` for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+<!-- CONTACT -->
+## Contact
+
+Arturo Llorente - [@ArturoLlorente](www.linkedin.com/in/arturo-llorente) - arlloren@ucm.es
+
+Project Link: [https://github.com/ArturoLlorente/nemesis](https://github.com/ArturoLlorente/nemesis)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
