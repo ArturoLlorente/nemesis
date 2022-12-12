@@ -4,7 +4,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/ArturoLlorente/nemesis">
-    <img src="images/P-ONE_logo.jpg" alt="Logo" width="80" height="80">
+    <img src="images/P-ONE_logo.jpg" alt="Logo">
   </a>
 
   <h3 align="center">Nemesis</h3>
