@@ -50,6 +50,8 @@ The Pacific Ocean Neutrino Experiment (P-ONE) is an initiative towards construct
 
 Nemesis is a GNN based classification tool for event classification at P-One. The repository has a set of different models to generate and classify cascades, tracks and starting tracks for different detector topologies and energy configuration.
 
+Usage of this package requires previous knowledge in the use of [PyTorch Geometric](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html) and [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/latest/new-project.html), as well as some insights into GNNs. 
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
