@@ -113,4 +113,7 @@ def train_model(model, train_dataset, val_dataset, label_map, k=8, lr=0.001, bat
         writer.add_hparams({"knn value":k},{"Train Accuracy":train_acc,"Train Loss":train_loss,"Val Accuracy":val_acc,"Val Loss":val_loss},)
         writer.close()  
         
+    print('The best epoch was: ', best_epoch)
+    print("Number of training epochs: ", epoch)
+
     return model, all_trains_acc, all_vals_acc
