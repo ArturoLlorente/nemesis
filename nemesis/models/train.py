@@ -2,7 +2,7 @@ import torch
 import torch_geometric
 from torch_geometric.loader import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from nemesis.evaluation.evaluation import plot_confusion
+from nemesis.plotting.plotting import plot_confusion
 from tqdm.auto import tqdm
 
 if torch.cuda.is_available():

@@ -1,7 +1,7 @@
 """Utility functions."""
 import logging
 import numpy as np
-from .constants import Constants
+from ..event_generation.constants import Constants
 
 logger = logging.getLogger(__name__)
 

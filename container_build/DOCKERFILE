@@ -54,7 +54,8 @@ SHELL ["conda", "run", "--no-capture-output", "-n", "base", "/bin/bash", "-c"]
 
 RUN pip3 install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113 && \
     pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cu113.html && \
-    pip install jupyterlab awkward numba seaborn tqdm ipywidgets aquirdturtle_collapsible_headings plotly networkx dill pytorch_lightning colorlog && \
+    pip install jupyterlab awkward numba seaborn tqdm ipywidgets aquirdturtle_collapsible_headings plotly networkx && \
+    pip install dill pytorch_lightning colorlog prettytable && \
     pip install tensorflow tbp-nightly matplotlib_inline Geometry3D && \
     pip install git+https://github.com/thoglu/jammy_flows.git && \
     pip install fb8 dm-haiku optax && \

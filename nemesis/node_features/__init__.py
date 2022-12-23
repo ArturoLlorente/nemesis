@@ -1,1 +1,1 @@
-from .feature_generation import get_features, feature_generation
+from .feature_generation import get_features, generate_features
