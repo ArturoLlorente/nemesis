@@ -59,7 +59,7 @@ def get_features(det, hit_times, reference="median_global"):
     return features
 
 
-def generate_features(det, all_events, all_labels):
+def generate_features(det, all_events, all_labels, k=8):
     data_array_feat = []
     pbar = tqdm(total=len(all_labels))
     # ToSparseTensor()
@@ -71,7 +71,7 @@ def generate_features(det, all_events, all_labels):
         features = features[valid]
         x = torch.Tensor(features)
 
-        edge_index = knn_graph(x[:, [-1, -2, -3]], k=8, loop=False)
+        edge_index = knn_graph(x[:, [-1, -2, -3]], k, loop=False)
         #data = transf(torch_geometric.data.Data(x, edge_index, y=torch.tensor([label], dtype=torch.int64)).to(device))
         data = torch_geometric.data.Data(x, edge_index, y=torch.tensor([label], dtype=torch.int64)).to(device)
         data_array_feat.append(data)
