@@ -6,11 +6,9 @@ from nemesis.plotting.plotting import plot_confusion
 from tqdm.auto import tqdm
 
 if torch.cuda.is_available():
-    print('CUDA')
     device = torch.device("cuda")
 else:
     device = torch.device("cpu")
-    print('CPU')
     
     
 

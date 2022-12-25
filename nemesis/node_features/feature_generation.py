@@ -6,6 +6,11 @@ from tqdm.auto import tqdm
 import torch_geometric
 from torch_geometric.nn import knn_graph
 
+if torch.cuda.is_available():
+    device = torch.device("cuda")   
+else:
+    device = torch.device("cpu")
+
 
 def get_features(det, hit_times, reference="median_global"):
     """Calculate standard features: Percentiles, Amplitude and module positions."""
@@ -54,7 +59,7 @@ def get_features(det, hit_times, reference="median_global"):
     return features
 
 
-def generate_features(all_events, all_labels, det, device):
+def generate_features(det, all_events, all_labels):
     data_array_feat = []
     pbar = tqdm(total=len(all_labels))
     # ToSparseTensor()
