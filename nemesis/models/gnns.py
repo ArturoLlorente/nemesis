@@ -112,43 +112,42 @@ class MLP(torch.nn.Module):
 
 
 class Dynamic_class(torch.nn.Module):
-    def __init__(self, out_channels, k, aggr='max'):
+    
+    def __init__(self, out_channels, k, aggr='max', bigMLP=True):
         super().__init__()
-
-        #self.conv11 = DynamicEdgeConv(Linear(2*15, 64), k, aggr)
-        #self.conv12 = DynamicEdgeConv(Linear(2*64, 64), k, aggr)
-        #self.BatchNorm1 = BatchNorm(64)
-        #self.pool1 = TopKPooling(64)
-#
-        #self.conv21 = DynamicEdgeConv(Linear(2*64, 128), k, aggr)
-        #self.conv22 = DynamicEdgeConv(Linear(2*128, 128), k, aggr)
-        #self.BatchNorm2 = BatchNorm(128)
-        #self.pool2 = TopKPooling(128)
 
         self.conv11 = TAGConv(15, 64, K=4)
         self.conv12 = TAGConv(64, 64, K=4)
         self.BatchNorm1 = BatchNorm(64)
 
-        self.conv21 = TAGConv(64, 64, K=3)
-        self.conv22 = TAGConv(64, 32, K=3)
-        self.BatchNorm2 = BatchNorm(32)
+        if bigMLP:
+            b = [64, 64, 32]
+            c = [2*32, 64, 64]
+            d = [2*64, 32, 32]
+        else:
+            b = [64, 128, 128]
+            c = [2*128, 64, 64]
+            d = [2*64, 128, 128]
+            
+        self.conv21 = TAGConv(b[1], b[2], K=3)
+        self.conv22 = TAGConv(b[2], b[3], K=3)
+        self.BatchNorm2 = BatchNorm(b[3])
 
-        self.conv31 = DynamicEdgeConv(Linear(2*32, 64), k, aggr)        
-        self.conv32 = DynamicEdgeConv(Linear(2*64, 64), k, aggr)
-        self.BatchNorm3 = BatchNorm(64)
-        #self.pool3 = TopKPooling(64)
+        self.conv31 = DynamicEdgeConv(Linear(c[1], c[2]), k, aggr)        
+        self.conv32 = DynamicEdgeConv(Linear(c[2]*2, c[3]), k, aggr)
+        self.BatchNorm3 = BatchNorm(c[3])
 
-        self.conv41 = DynamicEdgeConv(Linear(2*64, 32), k, aggr)
-        self.conv42 = DynamicEdgeConv(Linear(2*32, 32), k, aggr)
-        self.BatchNorm4 = BatchNorm(32)
-        #self.pool4 = TopKPooling(128)
+        self.conv41 = DynamicEdgeConv(Linear(d[1], d[2]), k, aggr)
+        self.conv42 = DynamicEdgeConv(Linear(2*d[2], d[3]), k, aggr)
+        self.BatchNorm4 = BatchNorm(d[3])
+        
+        if bigMLP:
+            self.lin1 = Linear((64*2 + 32*2), 128)
+            self.mlp = MLP([128, 32, out_channels], dropout=0.5)
+        else:
+            self.lin1 = Linear((64*2 + 128*2), 2048)
+            self.mlp = MLP([2048, 2048, 1024, 1024, 512, 512, 256, 256, out_channels], dropout=0.5)
 
-        #self.feast51 = FeaStConv(128, 128)
-        #self.feast52 = FeaStConv(128, 128)
-        #self.BatchNorm4 = BatchNorm(128)
-
-        self.lin1 = Linear((64*2 + 32*2), 128)
-        self.mlp = MLP([128, 32, out_channels], dropout=0.5)#, norm=None)
 
     def forward(self, x):#, edge_index, batch):
         x, edge_index, batch = x.x, x.edge_index, x.batch
@@ -176,8 +175,8 @@ class Dynamic_class(torch.nn.Module):
 
 
         out = self.mlp(out)
-        #return F.log_softmax(out, dim=1)
-        return out
+        return F.log_softmax(out, dim=1)
+        
 
 class DynEdge_modified(GNN):
     def __init__(self, input_features, output_features, k = 15, features_subset = slice(12, 15), layer_size_scale=4):
@@ -298,5 +297,52 @@ class DynEdge_modified(GNN):
         x = self.lrelu(x)
         
         return x        
+        
+        
+class Dyn_own(GNN):
+    def __init__(self, input_features, output_features, k=15, feat_subset=slice(12, 15)):
+        super().__init__(input_features, output_features)
+        self.conv1 = DynEdgeConv(torch.nn.Sequential(Linear(input_features*2, 64), LeakyReLU()), aggr='max', nb_neighbors=k, features_subset=feat_subset)
+        self.conv2 = DynEdgeConv(torch.nn.Sequential(Linear(64*2, 128), LeakyReLU()), aggr='add', nb_neighbors=k, features_subset=feat_subset)
+        self.conv3 = DynEdgeConv(torch.nn.Sequential(Linear(128*2, 128), LeakyReLU()), aggr='max', nb_neighbors=k, features_subset=feat_subset)
+        self.conv4 = DynEdgeConv(torch.nn.Sequential(Linear(128*2, 128), LeakyReLU()), aggr='add', nb_neighbors=k, features_subset=feat_subset)
+        
+        self.lin1 = Linear(input_features+64+128+128+128, 1024)
+        self.lin2 = Linear(1024, 512)
+        self.lin3 = Linear(2066, 128)
+        self.lin4 = Linear(128, output_features)
+        self.lrelu = LeakyReLU()
+    
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+        
+        dx, dy, dz = calculate_xyz_homophily_POne(x, edge_index, batch)
+        global_means = scatter_mean(x, batch, dim=0)
+        
+        x1, edge_index = self.conv1(x, edge_index, batch)
+        x2, edge_index = self.conv2(x1, edge_index, batch)
+        x3, edge_index = self.conv3(x2, edge_index, batch)
+        x4, edge_index = self.conv4(x3, edge_index, batch)
+        
+        x = torch.cat([x, x1, x2, x3, x4], dim=1)
+        
+        x = self.lin1(x)
+        x = self.lrelu(x)
+        x = self.lin2(x)
+        
+        x1, _ = scatter_max(x, batch, dim=0)
+        x2, _ = scatter_min(x, batch, dim=0)
+        x3 = scatter_sum(x, batch, dim=0)
+        x4 = scatter_mean(x, batch, dim=0)
+        
+        x = torch.cat([x1, x2, x3, x4, dx, dy, dz, global_means], dim=1)
+        
+        x = self.lrelu(x)
+        x = self.lin3(x)
+        x = self.lrelu(x)
+        x = self.lin4(x)
+        x = F.log_softmax(x, dim=1)
+        
+        return x
         
         
