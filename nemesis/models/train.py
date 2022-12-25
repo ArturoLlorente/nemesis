@@ -3,6 +3,7 @@ import torch_geometric
 from torch_geometric.loader import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from nemesis.plotting.plotting import plot_confusion
+from nemesis.evaluation.evaluation import evaluate_model
 from tqdm.auto import tqdm
 
 if torch.cuda.is_available():
@@ -59,7 +60,7 @@ class model_training():
 def train_model(model, train_dataset, val_dataset, label_map, k=8, lr=0.001, batch_size=200, epochs=200, patience=200, print_step=1, use_writer=False):
 
     pbar = tqdm(total=epochs)
-
+    best_acc, patience_count = 0, 0
     #model = Dynamic_class(out_channels=num_classes, k=k)
     model.to(device)
     

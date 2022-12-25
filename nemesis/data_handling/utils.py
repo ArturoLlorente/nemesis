@@ -118,6 +118,7 @@ def track_isects_cyl(radius, height, pos, direc):
                 h = max(h[0], r[0]), min(h[1], r[1])
     return h
 
+
 def deposited_energy(det, record):
     """Calculate the deposited energy inside the detector outer hull."""
     dep_e = 0
@@ -126,7 +127,8 @@ def deposited_energy(det, record):
             dep_e += source.amp
     return dep_e
 
-def event_labelling(track_records, strack_records, cascade_records=None, det_hull=(50.0, 1000.0), updown=True, tolerance=10):
+
+def event_labelling(track_records, strack_records, cascade_records=None, det_hull=(50.0, 1000.0), updown=False, tolerance=10):
 
     tolerance = tolerance*np.pi/180
     

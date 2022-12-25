@@ -58,7 +58,7 @@ class energy_gap_test():
             energy_divisions = np.logspace(log_emin, log_emax, self.num_divisions)
             #energy_divisions = np.linspace(Emin, Emax, num_divisions)
         else:
-            all_energies = [sub['energy'] for sub in self.all_records_test]
+            all_energies = [sub.mc_info[0]['energy'] for sub in self.all_records_test]
             energy_divisions = np.linspace(np.min(all_energies), np.max(all_energies), self.num_divisions)
         
         len_divisions = 0
