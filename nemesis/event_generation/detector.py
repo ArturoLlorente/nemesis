@@ -74,7 +74,41 @@ class Detector(object):
     def outer_cylinder(self):
         return self._outer_cylinder
     
-def make_line(x, y, n_z, dist_z, rng, baseline_noise_rate, line_id, efficiency=0.2):
+    
+def calculate_x_displacement(module_positions_z, v_x, buoy=30, interp='cubic'):
+    
+    
+    if buoy == 0 and interp == 'linear':
+        c_ij = np.array([[0, 0, 0, 0],[0,  1.89675157e-02, -1.88782797e-05,  6.86966811e-09],[-4.12837591e-11,  3.08289997e+00, -2.57124952e-03,  7.68681299e-07],[ 9.25370891e-14, -2.64904419e+00,  2.89333720e-03, -1.13182809e-06]])    
+    elif buoy == 0 and interp == 'cubic':
+        c_ij = np.array([[0, 0, 0, 0],[0,  7.68639985e-03, -8.34901060e-06,  3.29026809e-09],[-4.92800042e-11,  3.24845404e+00, -2.74166773e-03,  8.32680544e-07],[ 1.10036980e-13, -3.27289333e+00,  3.54627567e-03, -1.37910532e-06]])
+    elif buoy == 30 and interp == 'linear':
+        c_ij = np.array([[0, 0, 0, 0],[0, -8.81316113e-03,  1.34229894e-05, -6.12599295e-09],[-4.32489363e-11,  4.10936499e+00, -1.92306436e-03,  3.42335732e-08],[ 9.77828929e-14, -2.54847112e+00,  1.85051221e-03, -4.53154300e-07]])
+    elif buoy == 30 and interp == 'cubic':
+        c_ij = np.array([[0, 0, 0, 0],[0, -2.12205039e-02,  2.00446217e-05, -6.77415205e-09],[-5.00985802e-11,  4.26568967e+00, -2.02259913e-03,  5.40164296e-08],[ 1.12826415e-13, -3.07903857e+00,  2.19302865e-03, -5.20736886e-07]])
+    else:
+        raise ValueError('Buoyancy not implemented')    
+        
+    A_x_all = []
+    for index in range(20):
+        A_x = 0
+        z0 = module_positions_z[index]
+        for i in range(4):
+            for j in range(4):
+                A_x += c_ij[i][j]*(v_x**i)*(z0**j)
+        A_x_all.append(A_x)
+    return A_x_all
+
+def calculate_new_z(A_x_all, length_btw_modules = 52.63156):
+    A_z_all = []
+    for index in range(1, 21):
+        A_z = 0
+        for j in range(1,index):
+            A_z += np.sqrt(length_btw_modules**2 - (A_x_all[j] - A_x_all[j-1])**2)
+        A_z_all.append(A_z)    
+    return A_z_all
+    
+def make_line(x, y, n_z, dist_z, rng, baseline_noise_rate, line_id, efficiency=0.2, v_x = 0.2, buoy_weight = 30, interp_type = 'cubic'):
     """
     Make a line of detector modules.
 
@@ -93,10 +127,24 @@ def make_line(x, y, n_z, dist_z, rng, baseline_noise_rate, line_id, efficiency=0
             random rates per module.
         line_id: int
             Identifier for this line
+        v_x: float
+            current velocity in x direction (m/s)
+        buoy_weight: float
+            buoyancy weight (kg) [0, 30]
+        interp_type: str
+            interpolation type for the string bending ['linear', 'cubic']
     """
     modules = []
-    for i, pos_z in enumerate(np.linspace(-dist_z * n_z / 2, dist_z * n_z / 2, n_z)):
-        pos = np.array([x, y, pos_z])
+    
+    # caclulate the z position of the modules
+    module_positions_z = np.linspace(0, dist_z * n_z, n_z)
+    length_btw_modules = module_positions_z[1] - module_positions_z[0]
+    
+    module_x_displacement = calculate_x_displacement(module_positions_z, v_x, buoy_weight, interp_type)
+    module_new_z = calculate_new_z(module_x_displacement, length_btw_modules)
+    
+    for i, pos_z in enumerate(module_new_z):
+        pos = np.array([x+module_x_displacement[i], y, pos_z])
         noise_rate = (
             scipy.stats.gamma.rvs(1, 0.25, random_state=rng) * baseline_noise_rate
         )
@@ -104,8 +152,9 @@ def make_line(x, y, n_z, dist_z, rng, baseline_noise_rate, line_id, efficiency=0
             pos, key=(line_id, i), noise_rate=noise_rate, efficiency=efficiency
         )
         modules.append(mod)
+        
+    
     return modules
-
 
 def make_triang(
     side_len,
@@ -114,6 +163,9 @@ def make_triang(
     dark_noise_rate=16 * 1e-5,
     rng=np.random.RandomState(0),
     efficiency=0.5,
+    v_x = 0.2,
+    buoy_weight = 30,
+    interp_type = 'cubic'
 ):
 
     height = np.sqrt(side_len**2 - (side_len / 2) ** 2)
@@ -127,6 +179,9 @@ def make_triang(
         dark_noise_rate,
         0,
         efficiency=efficiency,
+        v_x=v_x,
+        buoy_weight=buoy_weight,
+        interp_type=interp_type
     )
     modules += make_line(
         side_len / 2,
@@ -137,6 +192,9 @@ def make_triang(
         dark_noise_rate,
         1,
         efficiency=efficiency,
+        v_x=v_x,
+        buoy_weight=buoy_weight,
+        interp_type=interp_type
     )
     modules += make_line(
         0,
@@ -147,6 +205,9 @@ def make_triang(
         dark_noise_rate,
         2,
         efficiency=efficiency,
+        v_x=v_x,
+        buoy_weight=buoy_weight,
+        interp_type=interp_type
     )
 
     det = Detector(modules)
