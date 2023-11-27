@@ -57,23 +57,21 @@ class model_training():
     
     
 
-def train_model(model, train_dataset, val_dataset, label_map, k=8, lr=0.001, batch_size=200, epochs=200, patience=200, print_step=1, use_writer=False):
+def train_model(model, train_dataset, val_dataset, label_map, k=8, lr=0.001, batch_size=200, epochs=200, patience=200, print_step=1, use_writer=False, weight_decay=1e-5):
 
     pbar = tqdm(total=epochs)
     best_acc, patience_count = 0, 0
-    #model = Dynamic_class(out_channels=num_classes, k=k)
     model.to(device)
     
     criterion = torch.nn.CrossEntropyLoss()
     #swa_model = torch.optim.swa_utils.AveragedModel(model)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', verbose=True)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', verbose=True)
     if use_writer:
         writer = SummaryWriter(f"/app/tensorboard/July24/model_5 k_value {k} lr: {lr}")# LR {lr}")
 
     train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size, shuffle=False)
-    #test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
     model_train = model_training(model, train_loader, val_loader, optimizer, criterion, device)
     all_trains_acc, all_vals_acc, all_trains_loss, all_vals_loss = [], [], [], []
 
@@ -104,12 +102,12 @@ def train_model(model, train_dataset, val_dataset, label_map, k=8, lr=0.001, bat
         patience_count += 1
         if patience_count == patience:
             break
-        #if train_acc > 0.98:
-        #    break
+        if train_acc > 0.98:
+            break
         pbar.update()
 
     if use_writer:
-        writer.add_hparams({"knn value":k},{"Train Accuracy":train_acc,"Train Loss":train_loss,"Val Accuracy":val_acc,"Val Loss":val_loss},)
+        writer.add_hparams({"knn value":k},{"Train Accuracy":train_acc,"Train Loss":train_loss,"Val Accuracy":val_acc,"Val Loss":val_loss})
         writer.close()  
         
     print('The best epoch was: ', best_epoch)

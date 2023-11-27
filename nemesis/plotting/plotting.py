@@ -47,7 +47,7 @@ def plot_event(det, hit_times, record=None, plot_tfirst=False, plot_hull=False):
         positions = []
         sizes = []
         for source in record.sources:
-            sizes.append(np.asscalar((np.log10(source.n_photons) / 2) ** 2))
+            sizes.append(np.ndarray.item((np.log10(source.n_photons) / 2) ** 2))
             positions.append(
                 [source.position[0], source.position[1], source.position[2]]
             )
@@ -63,8 +63,10 @@ def plot_event(det, hit_times, record=None, plot_tfirst=False, plot_hull=False):
         )
     if plot_hull:
         # Cylinder
-        radius = det.outer_cylinder[0]
-        height = det.outer_cylinder[1]
+        #radius = det.outer_cylinder[0]
+        #height = det.outer_cylinder[1]
+        radius = plot_hull[0]
+        height = plot_hull[1]
         z = np.linspace(-height / 2, height / 2, 100)
         theta = np.linspace(0, 2 * np.pi, 50)
         theta_grid, z_grid = np.meshgrid(theta, z)

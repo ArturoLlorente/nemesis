@@ -129,17 +129,17 @@ class Dynamic_class(torch.nn.Module):
             c = [2*128, 64, 64]
             d = [2*64, 128, 128]
             
-        self.conv21 = TAGConv(b[1], b[2], K=3)
-        self.conv22 = TAGConv(b[2], b[3], K=3)
-        self.BatchNorm2 = BatchNorm(b[3])
+        self.conv21 = TAGConv(b[0], b[1], K=3)
+        self.conv22 = TAGConv(b[1], b[2], K=3)
+        self.BatchNorm2 = BatchNorm(b[2])
 
-        self.conv31 = DynamicEdgeConv(Linear(c[1], c[2]), k, aggr)        
-        self.conv32 = DynamicEdgeConv(Linear(c[2]*2, c[3]), k, aggr)
-        self.BatchNorm3 = BatchNorm(c[3])
+        self.conv31 = DynamicEdgeConv(Linear(c[0], c[1]), k, aggr)        
+        self.conv32 = DynamicEdgeConv(Linear(c[1]*2, c[2]), k, aggr)
+        self.BatchNorm3 = BatchNorm(c[2])
 
-        self.conv41 = DynamicEdgeConv(Linear(d[1], d[2]), k, aggr)
-        self.conv42 = DynamicEdgeConv(Linear(2*d[2], d[3]), k, aggr)
-        self.BatchNorm4 = BatchNorm(d[3])
+        self.conv41 = DynamicEdgeConv(Linear(d[0], d[1]), k, aggr)
+        self.conv42 = DynamicEdgeConv(Linear(2*d[1], d[2]), k, aggr)
+        self.BatchNorm4 = BatchNorm(d[2])
         
         if bigMLP:
             self.lin1 = Linear((64*2 + 32*2), 128)
@@ -253,11 +253,12 @@ class DynEdge_modified(GNN):
         
         #Linear layers
         
+        
+        
         self.nn1 = Linear(l3*4 + l1, l4)
         self.nn2 = Linear(l4, l5)
         self.nn3 = Linear(4*l5 + 3, l6)
-        self.lrelu = LeakyReLU()
-        
+        self.lrelu = LeakyReLU()        
         
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch

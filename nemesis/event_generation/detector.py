@@ -141,7 +141,8 @@ def make_line(x, y, n_z, dist_z, rng, baseline_noise_rate, line_id, efficiency=0
     length_btw_modules = module_positions_z[1] - module_positions_z[0]
     
     module_x_displacement = calculate_x_displacement(module_positions_z, v_x, buoy_weight, interp_type)
-    module_new_z = calculate_new_z(module_x_displacement, length_btw_modules)
+    module_new_z_from0 = calculate_new_z(module_x_displacement, length_btw_modules)
+    module_new_z = [z_i-500 for z_i in module_new_z_from0]
     
     for i, pos_z in enumerate(module_new_z):
         pos = np.array([x+module_x_displacement[i], y, pos_z])
@@ -163,8 +164,8 @@ def make_triang(
     dark_noise_rate=16 * 1e-5,
     rng=np.random.RandomState(0),
     efficiency=0.5,
-    v_x = 0.2,
-    buoy_weight = 30,
+    v_x = 0,
+    buoy_weight = 0,
     interp_type = 'cubic'
 ):
 
